@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { renderParts, type DesignPart } from './openscad'
@@ -70,6 +70,25 @@ function run(bin: string, args: string[], cwd: string): Promise<void> {
       else reject(new Error(`Bambu Studio salió con código ${code}:\n${out}`))
     })
   })
+}
+
+/**
+ * El color real que se ve en Bambu Studio vive en Metadata/project_settings.config
+ * dentro del .3mf (campo filament_colour), no en el preset de filamento que carga
+ * la CLI. Lo parcheamos directo en el zip después de exportar.
+ */
+async function patchFilamentColors(mfPath: string, colors: string[], workDir: string): Promise<void> {
+  const extractDir = join(workDir, `extract-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  await run('unzip', ['-o', mfPath, '-d', extractDir], workDir)
+
+  const settingsPath = join(extractDir, 'Metadata', 'project_settings.config')
+  const settings = JSON.parse(await readFile(settingsPath, 'utf-8'))
+  settings.filament_colour = colors
+  settings.default_filament_colour = colors
+  await writeFile(settingsPath, JSON.stringify(settings, null, 4), 'utf-8')
+
+  await run('zip', ['-r', '-X', mfPath, '.'], extractDir)
+  await rm(extractDir, { recursive: true, force: true })
 }
 
 interface Triangle {
@@ -242,6 +261,10 @@ export async function sendToBambuStudio(
       ],
       dir
     )
+
+    const colors = partTriangles.map(({ part }) => part.color.toUpperCase())
+    await patchFilamentColors(outPath, colors, dir)
+
     plateFiles.push(outPath)
   }
 
