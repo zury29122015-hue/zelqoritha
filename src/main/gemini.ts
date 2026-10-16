@@ -57,10 +57,13 @@ function client(): GoogleGenAI {
 
 function isRetryableError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err)
-  return /"code":\s*503|"code":\s*429|UNAVAILABLE|RESOURCE_EXHAUSTED/.test(message)
+  // Solo 503 (modelo saturado) vale la pena reintentar enseguida. Un 429 por
+  // cuota diaria agotada suele pedir esperar horas (no segundos), así que
+  // reintentar de inmediato no sirve de nada.
+  return /"code":\s*503|UNAVAILABLE/.test(message)
 }
 
-async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, attempts = 5): Promise<T> {
   let lastErr: unknown
   for (let i = 0; i < attempts; i++) {
     try {
@@ -68,7 +71,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
     } catch (err) {
       lastErr = err
       if (i < attempts - 1 && isRetryableError(err)) {
-        const waitMs = 1500 * Math.pow(2, i)
+        const waitMs = Math.min(2000 * Math.pow(2, i), 20000)
         console.log(`[gemini] intento ${i + 1} falló (reintentable), esperando ${waitMs}ms…`)
         await new Promise((resolve) => setTimeout(resolve, waitMs))
         continue

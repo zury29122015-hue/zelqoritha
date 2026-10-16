@@ -7,6 +7,21 @@ interface ChatEntry {
   text: string
 }
 
+function friendlyError(raw: string): string {
+  if (/"code":\s*503|UNAVAILABLE/.test(raw)) {
+    return 'Gemini está saturado en este momento. Ya intenté varias veces automáticamente y no respondió — intenta de nuevo en un rato.'
+  }
+  if (/"code":\s*429|RESOURCE_EXHAUSTED/.test(raw)) {
+    const match = raw.match(/retry in ([^"]+)"/i)
+    const when = match ? ` (dice que se resetea en ${match[1]})` : ''
+    return `Ya usaste tu cuota gratis de Gemini por hoy${when}. Espera a que se resetee o activa facturación en Google AI Studio.`
+  }
+  if (/Falta configurar tu API key/.test(raw)) {
+    return 'Falta tu API key de Gemini — ponla en Ajustes.'
+  }
+  return raw.length > 220 ? raw.slice(0, 220) + '…' : raw
+}
+
 interface Props {
   printer: PrinterModel
   onApproved: (scadCode: string, parts: DesignPart[]) => void
@@ -48,7 +63,7 @@ export function DesignStudio({ printer, onApproved }: Props) {
         : await window.api.generateDesign(instruction, printer.buildVolumeMm)
       await renderAndShow(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(friendlyError(err instanceof Error ? err.message : String(err)))
     } finally {
       setLoading(false)
     }
