@@ -72,73 +72,6 @@ function run(bin: string, args: string[], cwd: string): Promise<void> {
   })
 }
 
-async function isBambuStudioRunning(): Promise<boolean> {
-  try {
-    await run('pgrep', ['-x', 'BambuStudio'], tmpdir())
-    return true
-  } catch {
-    return false
-  }
-}
-
-function copyToClipboard(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('pbcopy')
-    proc.on('error', reject)
-    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`pbcopy salió con código ${code}`))))
-    proc.stdin.write(text)
-    proc.stdin.end()
-  })
-}
-
-/**
- * Usa Archivo > Importar > "Importar 3MF/STL/..." vía AppleScript/System Events
- * para cargar el archivo en la ventana principal ya abierta de Bambu Studio, en
- * vez de que "open -a" cree una ventana nueva (sin la cuenta ni las impresoras
- * conectadas del usuario). Pega la ruta vía portapapeles (cmd+v) en vez de
- * escribirla tecla por tecla, que resultó frágil (se cortaba a medias y dejaba
- * el diálogo de "ir a la carpeta" pidiendo que el usuario eligiera algo).
- * Requiere permiso de Accesibilidad para System Events; si falla (permiso no
- * concedido, menú distinto, etc.) se usa el fallback de abrir una ventana
- * nueva con "open -a".
- */
-async function importIntoMainWindow(filePath: string): Promise<void> {
-  await copyToClipboard(filePath)
-  const lines = [
-    'tell application "BambuStudio" to activate',
-    'delay 1',
-    'tell application "System Events"',
-    '  tell process "BambuStudio"',
-    '    click menu item "Importar 3MF/STL/STEP/SVG/OBJ/AMF..." of menu "Importar" of menu item "Importar" of menu "Archivo" of menu bar item "Archivo" of menu bar 1',
-    '  end tell',
-    'end tell',
-    'delay 1.2',
-    'tell application "System Events"',
-    '  tell process "BambuStudio"',
-    '    keystroke "g" using {command down, shift down}',
-    '    delay 0.6',
-    '    keystroke "v" using {command down}',
-    '    delay 0.5',
-    // El flujo de Bambu Studio encadena varios pasos (navegar a la ruta,
-    // seleccionar el archivo, abrirlo, confirmar "importar geometría" y a
-    // veces un aviso de "configuración no válida"). En vez de adivinar cuántos
-    // Return hacen falta, se detecta si hay una ventana/diálogo extra abierto
-    // sobre la principal y se confirma con Return hasta que ya no quede ninguno.
-    '    repeat 6 times',
-    '      delay 0.8',
-    '      if (count of windows) > 1 then',
-    '        key code 36',
-    '      else',
-    '        exit repeat',
-    '      end if',
-    '    end repeat',
-    '  end tell',
-    'end tell'
-  ]
-  const args = lines.flatMap((line) => ['-e', line])
-  await run('osascript', args, tmpdir())
-}
-
 /**
  * El color real que se ve en Bambu Studio vive en Metadata/project_settings.config
  * dentro del .3mf (campo filament_colour), no en el preset de filamento que carga
@@ -340,25 +273,14 @@ export async function sendToBambuStudio(
       ? ` Solo entraron ${fitted} copias por placa (pediste ${copiesPerPlate}); el resto no cabía en la cama de ${printer.name}.`
       : ''
 
-  const wasRunning = await isBambuStudioRunning()
-  if (wasRunning) {
-    try {
-      for (const file of plateFiles) {
-        await importIntoMainWindow(file)
-      }
-      return {
-        ok: true,
-        message: `Armé ${plateCount} placa(s) con ${fitted} copia(s) cada una y las importé en tu ventana de Bambu Studio.${fitNote}`
-      }
-    } catch {
-      // sigue abajo con el fallback de abrir una ventana nueva
-    }
-  }
-
+  // Se intentó automatizar que cargara en la ventana ya abierta de Bambu Studio
+  // (Archivo > Importar vía AppleScript/System Events), pero resultó frágil y
+  // en un intento llegó a revolver los colores de un proyecto real del usuario.
+  // Mejor y más seguro: siempre abrir como archivo nuevo con "open -a".
   await run('open', ['-a', 'BambuStudio', ...plateFiles], dir)
 
   return {
     ok: true,
-    message: `Armé ${plateCount} placa(s) con ${fitted} copia(s) cada una.${fitNote} No pude importarlas en tu ventana actual (puede que falte darle permiso de Accesibilidad a Electron en Ajustes del Sistema), así que las abrí en una ventana nueva de Bambu Studio. Si no aparecen todas como placas del mismo proyecto, usa "Agregar placa" e impórtalas desde ${dir}.`
+    message: `Armé ${plateCount} placa(s) con ${fitted} copia(s) cada una y las abrí en Bambu Studio.${fitNote} Si no aparecen todas como placas del mismo proyecto, usa "Agregar placa" en Bambu Studio e impórtalas desde ${dir}.`
   }
 }
