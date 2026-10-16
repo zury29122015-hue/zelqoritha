@@ -24,8 +24,9 @@ Reglas estrictas del codigo OpenSCAD que generas:
 4. Usa solo primitivas y operaciones de OpenSCAD (cube, cylinder, sphere, union, difference, intersection, hull, minkowski, linear_extrude, rotate_extrude, etc). Nada de imports externos.
 5. Las piezas pueden superponerse apenas (0.1-0.2mm) donde deban unirse para impresion multi-color, pero evita solapes grandes que generen huecos raros.
 6. Geometria razonable para impresion 3D: evita voladizos imposibles sin soporte cuando puedas, paredes con grosor minimo de ~1.2mm.
+7. Prioriza velocidad de respuesta: usa representaciones simplificadas y pocas piezas repetidas en vez de geometria exacta/compleja (ej. un balon de futbol puede ser una esfera con unas pocas franjas o manchas, no un icosaedro truncado con 32 paneles calculados uno por uno). No agregues comentarios en el codigo.
 
-Responde unicamente con el objeto estructurado pedido (summary, parts, scadCode). El campo scadCode es el archivo OpenSCAD completo como string, incluyendo los modulos y el bloque de seleccion render_part.`
+Responde unicamente con el objeto estructurado pedido (summary, parts, scadCode). El campo scadCode es el archivo OpenSCAD completo como string, compacto, incluyendo los modulos y el bloque de seleccion render_part.`
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -54,6 +55,30 @@ function client(): GoogleGenAI {
   return new GoogleGenAI({ apiKey })
 }
 
+function isRetryableError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err)
+  return /"code":\s*503|"code":\s*429|UNAVAILABLE|RESOURCE_EXHAUSTED/.test(message)
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      if (i < attempts - 1 && isRetryableError(err)) {
+        const waitMs = 1500 * Math.pow(2, i)
+        console.log(`[gemini] intento ${i + 1} falló (reintentable), esperando ${waitMs}ms…`)
+        await new Promise((resolve) => setTimeout(resolve, waitMs))
+        continue
+      }
+      throw err
+    }
+  }
+  throw lastErr
+}
+
 function parseDesignResponse(text: string): DesignResult {
   const parsed = JSON.parse(text)
   if (!parsed.scadCode || !Array.isArray(parsed.parts)) {
@@ -67,15 +92,22 @@ export async function generateDesign(
   buildVolumeMm: { x: number; y: number; z: number }
 ): Promise<DesignResult> {
   const ai = client()
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: `Volumen de impresion disponible: ${buildVolumeMm.x} x ${buildVolumeMm.y} x ${buildVolumeMm.z} mm.\n\nDiseño pedido: ${prompt}`,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      responseMimeType: 'application/json',
-      responseSchema
-    }
-  })
+  const t0 = Date.now()
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: `Volumen de impresion disponible: ${buildVolumeMm.x} x ${buildVolumeMm.y} x ${buildVolumeMm.z} mm.\n\nDiseño pedido: ${prompt}`,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: 'application/json',
+        responseSchema,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    })
+  )
+  console.log(
+    `[gemini] generateDesign: ${Date.now() - t0}ms, usage=${JSON.stringify(response.usageMetadata)}`
+  )
   return parseDesignResponse(response.text ?? '')
 }
 
@@ -86,9 +118,11 @@ export async function reviseDesign(
   buildVolumeMm: { x: number; y: number; z: number }
 ): Promise<DesignResult> {
   const ai = client()
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: `Volumen de impresion disponible: ${buildVolumeMm.x} x ${buildVolumeMm.y} x ${buildVolumeMm.z} mm.
+  const t0 = Date.now()
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: MODEL,
+      contents: `Volumen de impresion disponible: ${buildVolumeMm.x} x ${buildVolumeMm.y} x ${buildVolumeMm.z} mm.
 
 Este es el codigo OpenSCAD y manifiesto de piezas actuales:
 
@@ -101,11 +135,16 @@ ${previousScadCode}
 Cambio pedido por el usuario: ${instruction}
 
 Devuelve el objeto completo actualizado (scadCode entero, no un diff).`,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      responseMimeType: 'application/json',
-      responseSchema
-    }
-  })
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: 'application/json',
+        responseSchema,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    })
+  )
+  console.log(
+    `[gemini] reviseDesign: ${Date.now() - t0}ms, usage=${JSON.stringify(response.usageMetadata)}`
+  )
   return parseDesignResponse(response.text ?? '')
 }

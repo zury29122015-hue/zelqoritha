@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { DesignPart, DesignResult, PrinterModel, RenderedPart } from '../api'
 import { StlViewer } from '../components/StlViewer'
 
@@ -19,6 +19,14 @@ export function DesignStudio({ printer, onApproved }: Props) {
   const [renderedParts, setRenderedParts] = useState<RenderedPart[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [elapsedSec, setElapsedSec] = useState(0)
+
+  useEffect(() => {
+    if (!loading) return
+    setElapsedSec(0)
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000)
+    return () => clearInterval(id)
+  }, [loading])
 
   async function renderAndShow(result: DesignResult) {
     setDesign(result)
@@ -54,8 +62,17 @@ export function DesignStudio({ printer, onApproved }: Props) {
           {renderedParts.length > 0 ? (
             <StlViewer parts={renderedParts} />
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted)' }}>
-              {loading ? 'Generando diseño…' : 'Describe lo que quieres imprimir para empezar'}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted)', gap: 6 }}>
+              {loading ? (
+                <>
+                  <span>Generando diseño… ({elapsedSec}s)</span>
+                  <span style={{ fontSize: 11 }}>
+                    {elapsedSec < 90 ? 'Normalmente tarda entre 30s y 2 min' : 'Está tardando más de lo normal (puede que Gemini esté saturado), sigue intentando…'}
+                  </span>
+                </>
+              ) : (
+                'Describe lo que quieres imprimir para empezar'
+              )}
             </div>
           )}
         </div>
@@ -92,7 +109,7 @@ export function DesignStudio({ printer, onApproved }: Props) {
           />
           <div className="row">
             <button className="btn" disabled={loading || !prompt.trim()} onClick={handleSubmit}>
-              {loading ? 'Generando…' : design ? 'Pedir cambio' : 'Generar diseño'}
+              {loading ? `Generando… (${elapsedSec}s)` : design ? 'Pedir cambio' : 'Generar diseño'}
             </button>
             {design && (
               <button className="btn secondary" disabled={loading} onClick={() => onApproved(design.scadCode, design.parts)}>
