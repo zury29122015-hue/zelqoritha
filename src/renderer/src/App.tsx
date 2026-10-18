@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { DesignPart, GoogleAccount, PrinterModel, SavedDesign } from './api'
+import type { DesignPart, LocalAccount, PrinterModel, SavedDesign } from './api'
 import { PrinterSelect } from './screens/PrinterSelect'
 import { DesignStudio } from './screens/DesignStudio'
 import { PlateSetup } from './screens/PlateSetup'
@@ -11,7 +11,7 @@ type Step = 'login' | 'printers' | 'design' | 'plates' | 'settings' | 'library'
 
 export function App() {
   const [checkingAccount, setCheckingAccount] = useState(true)
-  const [account, setAccount] = useState<GoogleAccount | null>(null)
+  const [account, setAccount] = useState<LocalAccount | null>(null)
   const [step, setStep] = useState<Step>('login')
   const [lastNonSettingsStep, setLastNonSettingsStep] = useState<Step>('login')
   const [printers, setPrinters] = useState<PrinterModel[]>([])
@@ -39,11 +39,10 @@ export function App() {
   if (step === 'login') {
     return (
       <Login
-        onSignedIn={(acc) => {
+        onCreated={(acc) => {
           setAccount(acc)
           goTo('printers')
         }}
-        onOpenSettings={() => goTo('settings')}
       />
     )
   }
@@ -102,7 +101,15 @@ export function App() {
         />
       )}
 
-      {step === 'settings' && <Settings onChangePrinters={() => goTo('printers')} />}
+      {step === 'settings' && (
+        <Settings
+          onChangePrinters={() => goTo('printers')}
+          onSignedOut={() => {
+            setAccount(null)
+            setStep('login')
+          }}
+        />
+      )}
 
       {step === 'library' && (
         <MyDesigns
@@ -130,7 +137,7 @@ export function App() {
 
       {account && (
         <div style={{ position: 'fixed', bottom: 8, right: 12, fontSize: 11, color: 'var(--muted)' }}>
-          {account.email}
+          {account.name}
         </div>
       )}
     </>

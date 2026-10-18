@@ -7,7 +7,7 @@ import { checkOpenscadAvailable, renderParts, type DesignPart } from './openscad
 import { generateDesign, reviseDesign } from './gemini'
 import { sendToBambuStudio } from './bambu'
 import { listDesigns, getDesign, upsertDesign, deleteDesign, type SavedDesign } from './library'
-import { signInWithGoogle, getAccount, signOutGoogle } from './auth'
+import { createAccount, getAccount, signOut } from './auth'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -64,9 +64,9 @@ ipcMain.handle(
     sendToBambuStudio(scadCode, parts, printerId, plateCount, copiesPerPlate)
 )
 
-ipcMain.handle('auth:signIn', () => signInWithGoogle())
+ipcMain.handle('auth:create', (_e, name: string) => createAccount(name))
 ipcMain.handle('auth:getAccount', () => getAccount())
-ipcMain.handle('auth:signOut', () => signOutGoogle())
+ipcMain.handle('auth:signOut', () => signOut())
 
 ipcMain.handle('library:list', () => listDesigns())
 ipcMain.handle('library:get', (_e, id: string) => getDesign(id))

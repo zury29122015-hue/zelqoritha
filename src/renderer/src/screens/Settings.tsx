@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react'
-import type { GoogleAccount, PrinterModel } from '../api'
+import type { LocalAccount, PrinterModel } from '../api'
 
 interface Props {
   onChangePrinters: () => void
+  onSignedOut: () => void
 }
 
-export function Settings({ onChangePrinters }: Props) {
+export function Settings({ onChangePrinters, onSignedOut }: Props) {
   const [apiKey, setApiKey] = useState('')
   const [openscadPath, setOpenscadPath] = useState('')
   const [openscadOk, setOpenscadOk] = useState<boolean | null>(null)
   const [saved, setSaved] = useState(false)
 
-  const [account, setAccount] = useState<GoogleAccount | null>(null)
-  const [googleClientId, setGoogleClientId] = useState('')
-  const [googleClientSecret, setGoogleClientSecret] = useState('')
-  const [signingIn, setSigningIn] = useState(false)
-  const [authError, setAuthError] = useState('')
+  const [account, setAccount] = useState<LocalAccount | null>(null)
+  const [nameDraft, setNameDraft] = useState('')
 
   const [printers, setPrinters] = useState<PrinterModel[]>([])
   const [selectedPrinterIds, setSelectedPrinterIds] = useState<string[]>([])
@@ -24,9 +22,8 @@ export function Settings({ onChangePrinters }: Props) {
     window.api.getConfig().then((cfg) => {
       setApiKey(cfg.geminiApiKey)
       setOpenscadPath(cfg.openscadPath)
-      setGoogleClientId(cfg.googleClientId)
-      setGoogleClientSecret(cfg.googleClientSecret)
       setAccount(cfg.account)
+      setNameDraft(cfg.account?.name ?? '')
       setSelectedPrinterIds(cfg.selectedPrinterIds)
     })
     window.api.checkOpenscad().then(setOpenscadOk)
@@ -34,33 +31,21 @@ export function Settings({ onChangePrinters }: Props) {
   }, [])
 
   async function save() {
-    await window.api.setConfig({
-      geminiApiKey: apiKey,
-      openscadPath,
-      googleClientId,
-      googleClientSecret
-    })
+    await window.api.setConfig({ geminiApiKey: apiKey, openscadPath })
     setOpenscadOk(await window.api.checkOpenscad())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  async function handleSignIn() {
-    setSigningIn(true)
-    setAuthError('')
-    try {
-      const acc = await window.api.signInWithGoogle()
-      setAccount(acc)
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setSigningIn(false)
-    }
+  async function renameAccount() {
+    if (!nameDraft.trim()) return
+    const acc = await window.api.createAccount(nameDraft)
+    setAccount(acc)
   }
 
   async function handleSignOut() {
-    await window.api.signOutGoogle()
-    setAccount(null)
+    await window.api.signOut()
+    onSignedOut()
   }
 
   const myPrinters = printers.filter((p) => selectedPrinterIds.includes(p.id))
@@ -70,41 +55,18 @@ export function Settings({ onChangePrinters }: Props) {
       <h2>Ajustes</h2>
 
       <h3 style={{ marginTop: 0 }}>Cuenta</h3>
-      {account ? (
-        <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {account.picture && (
-            <img src={account.picture} alt="" width={40} height={40} style={{ borderRadius: '50%' }} />
-          )}
-          <div style={{ flex: 1 }}>
-            <strong>{account.name}</strong>
-            <div style={{ color: 'var(--muted)', fontSize: 12 }}>{account.email}</div>
-          </div>
-          <button className="btn secondary" onClick={handleSignOut}>
-            Cerrar sesión
+      <div className="field">
+        <label>Tu nombre</label>
+        <div className="row">
+          <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} style={{ flex: 1 }} />
+          <button className="btn secondary" onClick={renameAccount} disabled={nameDraft === account?.name}>
+            Guardar nombre
           </button>
         </div>
-      ) : (
-        <div className="field">
-          <label>Client ID de Google (OAuth, tipo "Desktop app")</label>
-          <input value={googleClientId} onChange={(e) => setGoogleClientId(e.target.value)} placeholder="xxxx.apps.googleusercontent.com" />
-          <label style={{ marginTop: 10 }}>Client Secret</label>
-          <input
-            type="password"
-            value={googleClientSecret}
-            onChange={(e) => setGoogleClientSecret(e.target.value)}
-            placeholder="GOCSPX-..."
-          />
-          {authError && <div className="error" style={{ marginTop: 8 }}>{authError}</div>}
-          <div className="row" style={{ marginTop: 10 }}>
-            <button className="btn secondary" onClick={save}>
-              Guardar credenciales
-            </button>
-            <button className="btn" disabled={signingIn || !googleClientId} onClick={handleSignIn}>
-              {signingIn ? 'Abriendo el navegador…' : 'Iniciar sesión con Google'}
-            </button>
-          </div>
-        </div>
-      )}
+        <button className="btn secondary" onClick={handleSignOut} style={{ marginTop: 10 }}>
+          Cerrar sesión
+        </button>
+      </div>
 
       <h3>Tus impresoras</h3>
       {myPrinters.length === 0 ? (

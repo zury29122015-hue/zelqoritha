@@ -22,19 +22,15 @@ export interface RenderedPart extends DesignPart {
   stlBase64: string
 }
 
-export interface GoogleAccount {
+export interface LocalAccount {
   name: string
-  email: string
-  picture: string
 }
 
 export interface AppConfig {
   geminiApiKey: string
   openscadPath: string
   selectedPrinterIds: string[]
-  googleClientId: string
-  googleClientSecret: string
-  account: GoogleAccount | null
+  account: LocalAccount | null
 }
 
 export interface BambuSendResult {
@@ -77,9 +73,9 @@ export interface Api {
   getDesign: (id: string) => Promise<SavedDesign | undefined>
   upsertDesign: (design: SavedDesign) => Promise<SavedDesign>
   deleteDesign: (id: string) => Promise<void>
-  signInWithGoogle: () => Promise<GoogleAccount>
-  getAccount: () => Promise<GoogleAccount | null>
-  signOutGoogle: () => Promise<void>
+  createAccount: (name: string) => Promise<LocalAccount>
+  getAccount: () => Promise<LocalAccount | null>
+  signOut: () => Promise<void>
 }
 
 declare global {
