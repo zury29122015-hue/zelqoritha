@@ -42,6 +42,7 @@
     "files": [
       "out/**/*"
     ],
+    "icon": "build/icon.icns",
     "mac": {
       "target": "dmg",
       "category": "public.app-category.graphics-design"
