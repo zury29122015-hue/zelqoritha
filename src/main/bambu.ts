@@ -159,32 +159,72 @@ function tileTriangles(triangles: Triangle[], offsets: [number, number][]): Tria
   return out
 }
 
-function computeGridOffsets(
+function scaleTriangles(triangles: Triangle[], scale: number): Triangle[] {
+  if (scale === 1) return triangles
+  return triangles.map((t) => ({
+    normal: t.normal,
+    verts: t.verts.map(([x, y, z]) => [x * scale, y * scale, z * scale]) as Triangle['verts']
+  }))
+}
+
+/**
+ * Acomoda `desiredCount` copias en una grilla dentro de la cama. Si no caben
+ * al tamaño original, encoge el diseño (nunca lo agranda) hasta el factor
+ * que las haga caber, como pide el usuario ("si pido 10 copias de una bola
+ * que ocupa toda la placa, que la haga más chica para que quepan las 10").
+ * Por debajo de MIN_SCALE ya no vale la pena seguir encogiendo (quedaría
+ * impráctico de imprimir), así que ahí se reduce cuántas copias caben en vez
+ * de seguir achicando.
+ */
+function computeGridLayout(
   unitW: number,
   unitH: number,
   bedW: number,
   bedH: number,
   desiredCount: number,
   marginMm = 6
-): { offsets: [number, number][]; fitted: number } {
-  const cellW = unitW + marginMm
-  const cellH = unitH + marginMm
-  const cols = Math.max(1, Math.floor(bedW / cellW))
-  const rows = Math.max(1, Math.floor(bedH / cellH))
-  const maxFit = cols * rows
-  const count = Math.max(1, Math.min(desiredCount, maxFit))
+): { offsets: [number, number][]; scale: number; fitted: number } {
+  const MIN_SCALE = 0.15
 
+  let best: { cols: number; rows: number; scale: number } | null = null
+  for (let cols = 1; cols <= desiredCount; cols++) {
+    const rows = Math.ceil(desiredCount / cols)
+    const scaleX = (bedW - (cols - 1) * marginMm) / (cols * unitW)
+    const scaleY = (bedH - (rows - 1) * marginMm) / (rows * unitH)
+    const scale = Math.min(scaleX, scaleY, 1)
+    if (scale <= 0) continue
+    if (!best || scale > best.scale) best = { cols, rows, scale }
+  }
+
+  if (!best) {
+    const scale = Math.max(Math.min(bedW / unitW, bedH / unitH, 1), 0.01)
+    return { offsets: [[0, 0]], scale, fitted: 1 }
+  }
+
+  let { cols, scale } = best
+  let fitted = desiredCount
+  if (scale < MIN_SCALE) {
+    scale = MIN_SCALE
+    const maxCols = Math.max(1, Math.floor((bedW + marginMm) / (unitW * scale + marginMm)))
+    const maxRows = Math.max(1, Math.floor((bedH + marginMm) / (unitH * scale + marginMm)))
+    fitted = Math.min(desiredCount, maxCols * maxRows)
+    cols = Math.min(maxCols, fitted)
+  }
+
+  const cellW = unitW * scale + marginMm
+  const cellH = unitH * scale + marginMm
+  const rowsUsed = Math.ceil(fitted / cols)
   const gridW = cols * cellW - marginMm
-  const gridH = Math.ceil(count / cols) * cellH - marginMm
+  const gridH = rowsUsed * cellH - marginMm
   const offsets: [number, number][] = []
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < fitted; i++) {
     const col = i % cols
     const row = Math.floor(i / cols)
     const x = -gridW / 2 + cellW / 2 + col * cellW
     const y = gridH / 2 - cellH / 2 - row * cellH
     offsets.push([x, y])
   }
-  return { offsets, fitted: count }
+  return { offsets, scale, fitted }
 }
 
 export interface BambuSendResult {
@@ -226,7 +266,13 @@ export async function sendToBambuStudio(
   const unitW = maxX - minX
   const unitH = maxY - minY
 
-  const { offsets, fitted } = computeGridOffsets(unitW, unitH, printer.buildVolumeMm.x, printer.buildVolumeMm.y, copiesPerPlate)
+  const { offsets, scale, fitted } = computeGridLayout(
+    unitW,
+    unitH,
+    printer.buildVolumeMm.x,
+    printer.buildVolumeMm.y,
+    copiesPerPlate
+  )
 
   const dir = await mkdtemp(join(tmpdir(), 'bambu-plates-'))
   const plateFiles: string[] = []
@@ -234,7 +280,8 @@ export async function sendToBambuStudio(
   for (let plate = 1; plate <= plateCount; plate++) {
     const stlPaths: string[] = []
     for (const { part, triangles } of partTriangles) {
-      const tiled = tileTriangles(triangles, offsets)
+      const scaled = scaleTriangles(triangles, scale)
+      const tiled = tileTriangles(scaled, offsets)
       const stlText = writeAsciiStl(part.id, tiled)
       const stlPath = join(dir, `plate${plate}_${part.id}.stl`)
       await writeFile(stlPath, stlText, 'utf-8')
@@ -270,8 +317,10 @@ export async function sendToBambuStudio(
 
   const fitNote =
     fitted < copiesPerPlate
-      ? ` Solo entraron ${fitted} copias por placa (pediste ${copiesPerPlate}); el resto no cabía en la cama de ${printer.name}.`
-      : ''
+      ? ` Reduje el tamaño al ${Math.round(scale * 100)}% y aun así solo entraron ${fitted} de ${copiesPerPlate} copias en la cama de ${printer.name}.`
+      : scale < 1
+        ? ` Reduje el tamaño al ${Math.round(scale * 100)}% para que cupieran las ${copiesPerPlate} copias en la cama de ${printer.name}.`
+        : ''
 
   // Se intentó automatizar que cargara en la ventana ya abierta de Bambu Studio
   // (Archivo > Importar vía AppleScript/System Events), pero resultó frágil y

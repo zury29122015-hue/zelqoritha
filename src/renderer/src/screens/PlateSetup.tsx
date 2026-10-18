@@ -48,6 +48,9 @@ export function PlateSetup({ printer, scadCode, parts, onDone }: Props) {
           value={copiesPerPlate}
           onChange={(e) => setCopiesPerPlate(Number(e.target.value))}
         />
+        <span style={{ display: 'block', marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>
+          Si no caben al tamaño original, se encoge el diseño para que quepan todas.
+        </span>
       </div>
       {error && <div className="error">{error}</div>}
       {result && <div className="loading">{result}</div>}
