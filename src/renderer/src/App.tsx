@@ -18,6 +18,8 @@ export function App() {
   const [activePrinter, setActivePrinter] = useState<PrinterModel | null>(null)
   const [approved, setApproved] = useState<{ scadCode: string; parts: DesignPart[] } | null>(null)
   const [openedDesign, setOpenedDesign] = useState<SavedDesign | undefined>(undefined)
+  const [pendingWorkspaceId, setPendingWorkspaceId] = useState<string | null>(null)
+  const [newDesignNonce, setNewDesignNonce] = useState(0)
 
   useEffect(() => {
     window.api
@@ -32,6 +34,11 @@ export function App() {
   function goTo(next: Step) {
     if (step !== 'settings') setLastNonSettingsStep(step)
     setStep(next)
+  }
+
+  function startNewDesign() {
+    setOpenedDesign(undefined)
+    setNewDesignNonce((n) => n + 1)
   }
 
   if (checkingAccount) return null
@@ -74,7 +81,6 @@ export function App() {
           onContinue={(selected) => {
             setPrinters(selected)
             setActivePrinter(selected[0] ?? null)
-            setOpenedDesign(undefined)
             goTo('design')
           }}
         />
@@ -82,9 +88,10 @@ export function App() {
 
       {step === 'design' && activePrinter && (
         <DesignStudio
-          key={openedDesign?.id ?? 'new'}
+          key={openedDesign?.id ?? `new-${newDesignNonce}`}
           printer={activePrinter}
           initialDesign={openedDesign}
+          workspaceId={pendingWorkspaceId}
           onApproved={(scadCode, parts) => {
             setApproved({ scadCode, parts })
             goTo('plates')
@@ -113,6 +120,7 @@ export function App() {
 
       {step === 'library' && (
         <MyDesigns
+          onBack={() => goTo(activePrinter ? 'design' : 'printers')}
           onOpen={(design, printer) => {
             setActivePrinter(printer)
             setOpenedDesign(design)
@@ -122,6 +130,11 @@ export function App() {
             setActivePrinter(printer)
             setApproved({ scadCode: design.scadCode, parts: design.parts })
             goTo('plates')
+          }}
+          onCreateInWorkspace={(workspaceId) => {
+            setPendingWorkspaceId(workspaceId)
+            startNewDesign()
+            goTo(activePrinter ? 'design' : 'printers')
           }}
         />
       )}

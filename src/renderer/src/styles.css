@@ -247,3 +247,67 @@ input {
   height: 14px;
   margin-right: 2px;
 }
+
+.like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+
+.workspace-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.tab.active {
+  border-color: var(--accent);
+}
+
+.tab-inner {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.tab.active .tab-inner {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 10px 0 0;
+  font-size: 14px;
+}
+
+.workspace-tabs > button.tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.workspace-tabs > button.tab.active {
+  color: var(--accent);
+  font-weight: 600;
+}

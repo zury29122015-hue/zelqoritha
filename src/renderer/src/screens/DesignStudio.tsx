@@ -25,10 +25,11 @@ function friendlyError(raw: string): string {
 interface Props {
   printer: PrinterModel
   initialDesign?: SavedDesign
+  workspaceId?: string | null
   onApproved: (scadCode: string, parts: DesignPart[]) => void
 }
 
-export function DesignStudio({ printer, initialDesign, onApproved }: Props) {
+export function DesignStudio({ printer, initialDesign, workspaceId, onApproved }: Props) {
   const [prompt, setPrompt] = useState('')
   const [log, setLog] = useState<ChatEntry[]>(
     initialDesign
@@ -49,6 +50,8 @@ export function DesignStudio({ printer, initialDesign, onApproved }: Props) {
   const designId = useRef(initialDesign?.id ?? crypto.randomUUID())
   const firstPrompt = useRef(initialDesign?.prompt ?? '')
   const createdAt = useRef(initialDesign?.createdAt ?? Date.now())
+  const resolvedWorkspaceId = initialDesign ? (initialDesign.workspaceId ?? null) : (workspaceId ?? null)
+  const liked = useRef(initialDesign?.liked ?? false)
 
   useEffect(() => {
     if (!loading) return
@@ -76,7 +79,9 @@ export function DesignStudio({ printer, initialDesign, onApproved }: Props) {
       summary: result.summary,
       scadCode: result.scadCode,
       parts: result.parts,
-      printerId: printer.id
+      printerId: printer.id,
+      workspaceId: resolvedWorkspaceId,
+      liked: liked.current
     }
     await window.api.upsertDesign(saved)
   }

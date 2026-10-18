@@ -47,6 +47,14 @@ export interface SavedDesign {
   scadCode: string
   parts: DesignPart[]
   printerId: string
+  workspaceId: string | null
+  liked: boolean
+}
+
+export interface Workspace {
+  id: string
+  name: string
+  createdAt: number
 }
 
 export interface Api {
@@ -76,6 +84,9 @@ export interface Api {
   createAccount: (name: string) => Promise<LocalAccount>
   getAccount: () => Promise<LocalAccount | null>
   signOut: () => Promise<void>
+  listWorkspaces: () => Promise<Workspace[]>
+  createWorkspace: (name: string) => Promise<Workspace>
+  deleteWorkspace: (id: string) => Promise<void>
 }
 
 declare global {

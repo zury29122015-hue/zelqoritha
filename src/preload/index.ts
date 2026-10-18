@@ -27,7 +27,10 @@ const api = {
   listDesigns: () => ipcRenderer.invoke('library:list'),
   getDesign: (id: string) => ipcRenderer.invoke('library:get', id),
   upsertDesign: (design: unknown) => ipcRenderer.invoke('library:upsert', design),
-  deleteDesign: (id: string) => ipcRenderer.invoke('library:delete', id)
+  deleteDesign: (id: string) => ipcRenderer.invoke('library:delete', id),
+  listWorkspaces: () => ipcRenderer.invoke('workspaces:list'),
+  createWorkspace: (name: string) => ipcRenderer.invoke('workspaces:create', name),
+  deleteWorkspace: (id: string) => ipcRenderer.invoke('workspaces:delete', id)
 }
 
 contextBridge.exposeInMainWorld('api', api)

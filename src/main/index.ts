@@ -6,7 +6,16 @@ import { store } from './config'
 import { checkOpenscadAvailable, renderParts, type DesignPart } from './openscad'
 import { generateDesign, reviseDesign } from './gemini'
 import { sendToBambuStudio } from './bambu'
-import { listDesigns, getDesign, upsertDesign, deleteDesign, type SavedDesign } from './library'
+import {
+  listDesigns,
+  getDesign,
+  upsertDesign,
+  deleteDesign,
+  listWorkspaces,
+  createWorkspace,
+  deleteWorkspace,
+  type SavedDesign
+} from './library'
 import { createAccount, getAccount, signOut } from './auth'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -72,6 +81,10 @@ ipcMain.handle('library:list', () => listDesigns())
 ipcMain.handle('library:get', (_e, id: string) => getDesign(id))
 ipcMain.handle('library:upsert', (_e, design: SavedDesign) => upsertDesign(design))
 ipcMain.handle('library:delete', (_e, id: string) => deleteDesign(id))
+
+ipcMain.handle('workspaces:list', () => listWorkspaces())
+ipcMain.handle('workspaces:create', (_e, name: string) => createWorkspace(name))
+ipcMain.handle('workspaces:delete', (_e, id: string) => deleteWorkspace(id))
 
 app.whenReady().then(() => {
   createWindow()
