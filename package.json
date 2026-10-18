@@ -1,5 +1,5 @@
 {
-  "name": "bambu-design-studio",
+  "name": "kelvara",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -35,5 +35,19 @@
     "@google/genai@2.30.0": true,
     "fsevents@2.3.3": true,
     "protobufjs@7.6.6": true
+  },
+  "build": {
+    "appId": "com.kelvara.app",
+    "productName": "Kelvara",
+    "files": [
+      "out/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.graphics-design"
+    },
+    "dmg": {
+      "title": "Kelvara"
+    }
   }
 }

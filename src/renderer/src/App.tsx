@@ -57,7 +57,7 @@ export function App() {
   return (
     <>
       <div className="topbar">
-        <h1>Bambu Design Studio</h1>
+        <h1>Kelvara</h1>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           {step === 'settings' ? (
             <button className="link" onClick={() => setStep(lastNonSettingsStep)}>
