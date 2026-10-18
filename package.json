@@ -1,5 +1,5 @@
 {
-  "name": "kelvara",
+  "name": "zelqoritha",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -37,8 +37,8 @@
     "protobufjs@7.6.6": true
   },
   "build": {
-    "appId": "com.kelvara.app",
-    "productName": "Kelvara",
+    "appId": "com.zelqoritha.app",
+    "productName": "Zelqoritha",
     "files": [
       "out/**/*"
     ],
@@ -47,7 +47,7 @@
       "category": "public.app-category.graphics-design"
     },
     "dmg": {
-      "title": "Kelvara"
+      "title": "Zelqoritha"
     }
   }
 }

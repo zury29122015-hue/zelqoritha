@@ -25,7 +25,7 @@ export function Login({ onCreated }: Props) {
       className="screen"
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}
     >
-      <h2>Bienvenido a Kelvara</h2>
+      <h2>Bienvenido a Zelqoritha</h2>
       <p style={{ color: 'var(--muted)', maxWidth: 420, marginBottom: 24 }}>
         Crea tu cuenta para empezar. Se guarda solo en esta computadora.
       </p>
