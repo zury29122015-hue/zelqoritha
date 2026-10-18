@@ -33,6 +33,17 @@ export interface BambuSendResult {
   message: string
 }
 
+export interface SavedDesign {
+  id: string
+  createdAt: number
+  updatedAt: number
+  prompt: string
+  summary: string
+  scadCode: string
+  parts: DesignPart[]
+  printerId: string
+}
+
 export interface Api {
   listPrinters: () => Promise<PrinterModel[]>
   getConfig: () => Promise<AppConfig>
@@ -53,6 +64,10 @@ export interface Api {
     plateCount: number,
     copiesPerPlate: number
   ) => Promise<BambuSendResult>
+  listDesigns: () => Promise<SavedDesign[]>
+  getDesign: (id: string) => Promise<SavedDesign | undefined>
+  upsertDesign: (design: SavedDesign) => Promise<SavedDesign>
+  deleteDesign: (id: string) => Promise<void>
 }
 
 declare global {

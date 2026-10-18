@@ -225,3 +225,25 @@ input {
   color: #ff6b6b;
   font-size: 13px;
 }
+
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.design-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.design-card .swatch {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}

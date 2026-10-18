@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { DesignPart, DesignResult, PrinterModel, RenderedPart } from '../api'
+import { useEffect, useRef, useState } from 'react'
+import type { DesignPart, DesignResult, PrinterModel, RenderedPart, SavedDesign } from '../api'
 import { StlViewer } from '../components/StlViewer'
 
 interface ChatEntry {
@@ -24,17 +24,31 @@ function friendlyError(raw: string): string {
 
 interface Props {
   printer: PrinterModel
+  initialDesign?: SavedDesign
   onApproved: (scadCode: string, parts: DesignPart[]) => void
 }
 
-export function DesignStudio({ printer, onApproved }: Props) {
+export function DesignStudio({ printer, initialDesign, onApproved }: Props) {
   const [prompt, setPrompt] = useState('')
-  const [log, setLog] = useState<ChatEntry[]>([])
-  const [design, setDesign] = useState<DesignResult | null>(null)
+  const [log, setLog] = useState<ChatEntry[]>(
+    initialDesign
+      ? [
+          { role: 'user', text: initialDesign.prompt },
+          { role: 'assistant', text: initialDesign.summary }
+        ]
+      : []
+  )
+  const [design, setDesign] = useState<DesignResult | null>(
+    initialDesign ? { scadCode: initialDesign.scadCode, parts: initialDesign.parts, summary: initialDesign.summary } : null
+  )
   const [renderedParts, setRenderedParts] = useState<RenderedPart[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(!!initialDesign)
   const [error, setError] = useState('')
   const [elapsedSec, setElapsedSec] = useState(0)
+
+  const designId = useRef(initialDesign?.id ?? crypto.randomUUID())
+  const firstPrompt = useRef(initialDesign?.prompt ?? '')
+  const createdAt = useRef(initialDesign?.createdAt ?? Date.now())
 
   useEffect(() => {
     if (!loading) return
@@ -43,11 +57,36 @@ export function DesignStudio({ printer, onApproved }: Props) {
     return () => clearInterval(id)
   }, [loading])
 
+  useEffect(() => {
+    if (initialDesign) {
+      window.api
+        .renderParts(initialDesign.scadCode, initialDesign.parts)
+        .then(setRenderedParts)
+        .finally(() => setLoading(false))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function saveToLibrary(result: DesignResult) {
+    const saved: SavedDesign = {
+      id: designId.current,
+      createdAt: createdAt.current,
+      updatedAt: Date.now(),
+      prompt: firstPrompt.current,
+      summary: result.summary,
+      scadCode: result.scadCode,
+      parts: result.parts,
+      printerId: printer.id
+    }
+    await window.api.upsertDesign(saved)
+  }
+
   async function renderAndShow(result: DesignResult) {
     setDesign(result)
     const rendered = await window.api.renderParts(result.scadCode, result.parts)
     setRenderedParts(rendered)
     setLog((prev) => [...prev, { role: 'assistant', text: result.summary }])
+    await saveToLibrary(result)
   }
 
   async function handleSubmit() {
@@ -56,6 +95,7 @@ export function DesignStudio({ printer, onApproved }: Props) {
     setLoading(true)
     setLog((prev) => [...prev, { role: 'user', text: prompt }])
     const instruction = prompt
+    if (!design && !firstPrompt.current) firstPrompt.current = instruction
     setPrompt('')
     try {
       const result = design

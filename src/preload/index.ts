@@ -20,7 +20,11 @@ const api = {
     printerId: string,
     plateCount: number,
     copiesPerPlate: number
-  ) => ipcRenderer.invoke('bambu:send', scadCode, parts, printerId, plateCount, copiesPerPlate)
+  ) => ipcRenderer.invoke('bambu:send', scadCode, parts, printerId, plateCount, copiesPerPlate),
+  listDesigns: () => ipcRenderer.invoke('library:list'),
+  getDesign: (id: string) => ipcRenderer.invoke('library:get', id),
+  upsertDesign: (design: unknown) => ipcRenderer.invoke('library:upsert', design),
+  deleteDesign: (id: string) => ipcRenderer.invoke('library:delete', id)
 }
 
 contextBridge.exposeInMainWorld('api', api)
