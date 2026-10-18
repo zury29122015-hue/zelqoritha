@@ -21,6 +21,9 @@ const api = {
     plateCount: number,
     copiesPerPlate: number
   ) => ipcRenderer.invoke('bambu:send', scadCode, parts, printerId, plateCount, copiesPerPlate),
+  signInWithGoogle: () => ipcRenderer.invoke('auth:signIn'),
+  getAccount: () => ipcRenderer.invoke('auth:getAccount'),
+  signOutGoogle: () => ipcRenderer.invoke('auth:signOut'),
   listDesigns: () => ipcRenderer.invoke('library:list'),
   getDesign: (id: string) => ipcRenderer.invoke('library:get', id),
   upsertDesign: (design: unknown) => ipcRenderer.invoke('library:upsert', design),

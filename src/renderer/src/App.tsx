@@ -1,24 +1,51 @@
-import { useState } from 'react'
-import type { DesignPart, PrinterModel, SavedDesign } from './api'
+import { useEffect, useState } from 'react'
+import type { DesignPart, GoogleAccount, PrinterModel, SavedDesign } from './api'
 import { PrinterSelect } from './screens/PrinterSelect'
 import { DesignStudio } from './screens/DesignStudio'
 import { PlateSetup } from './screens/PlateSetup'
 import { Settings } from './screens/Settings'
 import { MyDesigns } from './screens/MyDesigns'
+import { Login } from './screens/Login'
 
-type Step = 'printers' | 'design' | 'plates' | 'settings' | 'library'
+type Step = 'login' | 'printers' | 'design' | 'plates' | 'settings' | 'library'
 
 export function App() {
-  const [step, setStep] = useState<Step>('printers')
-  const [lastNonSettingsStep, setLastNonSettingsStep] = useState<Step>('printers')
+  const [checkingAccount, setCheckingAccount] = useState(true)
+  const [account, setAccount] = useState<GoogleAccount | null>(null)
+  const [step, setStep] = useState<Step>('login')
+  const [lastNonSettingsStep, setLastNonSettingsStep] = useState<Step>('login')
   const [printers, setPrinters] = useState<PrinterModel[]>([])
   const [activePrinter, setActivePrinter] = useState<PrinterModel | null>(null)
   const [approved, setApproved] = useState<{ scadCode: string; parts: DesignPart[] } | null>(null)
   const [openedDesign, setOpenedDesign] = useState<SavedDesign | undefined>(undefined)
 
+  useEffect(() => {
+    window.api
+      .getAccount()
+      .then((acc) => {
+        setAccount(acc)
+        setStep(acc ? 'printers' : 'login')
+      })
+      .finally(() => setCheckingAccount(false))
+  }, [])
+
   function goTo(next: Step) {
     if (step !== 'settings') setLastNonSettingsStep(step)
     setStep(next)
+  }
+
+  if (checkingAccount) return null
+
+  if (step === 'login') {
+    return (
+      <Login
+        onSignedIn={(acc) => {
+          setAccount(acc)
+          goTo('printers')
+        }}
+        onOpenSettings={() => goTo('settings')}
+      />
+    )
   }
 
   return (
@@ -49,7 +76,7 @@ export function App() {
             setPrinters(selected)
             setActivePrinter(selected[0] ?? null)
             setOpenedDesign(undefined)
-            setStep('design')
+            goTo('design')
           }}
         />
       )}
@@ -61,7 +88,7 @@ export function App() {
           initialDesign={openedDesign}
           onApproved={(scadCode, parts) => {
             setApproved({ scadCode, parts })
-            setStep('plates')
+            goTo('plates')
           }}
         />
       )}
@@ -71,23 +98,23 @@ export function App() {
           printer={activePrinter}
           scadCode={approved.scadCode}
           parts={approved.parts}
-          onDone={() => setStep('design')}
+          onDone={() => goTo('design')}
         />
       )}
 
-      {step === 'settings' && <Settings />}
+      {step === 'settings' && <Settings onChangePrinters={() => goTo('printers')} />}
 
       {step === 'library' && (
         <MyDesigns
           onOpen={(design, printer) => {
             setActivePrinter(printer)
             setOpenedDesign(design)
-            setStep('design')
+            goTo('design')
           }}
           onPrint={(design, printer) => {
             setActivePrinter(printer)
             setApproved({ scadCode: design.scadCode, parts: design.parts })
-            setStep('plates')
+            goTo('plates')
           }}
         />
       )}
@@ -95,9 +122,15 @@ export function App() {
       {step !== 'settings' && step !== 'library' && printers.length > 1 && step !== 'printers' && (
         <div style={{ padding: '0 24px 16px', color: 'var(--muted)', fontSize: 12 }}>
           Imprimiendo con: {activePrinter?.name} ·{' '}
-          <button className="link" onClick={() => setStep('printers')}>
+          <button className="link" onClick={() => goTo('printers')}>
             cambiar impresora
           </button>
+        </div>
+      )}
+
+      {account && (
+        <div style={{ position: 'fixed', bottom: 8, right: 12, fontSize: 11, color: 'var(--muted)' }}>
+          {account.email}
         </div>
       )}
     </>
