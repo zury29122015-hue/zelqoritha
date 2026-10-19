@@ -12,9 +12,7 @@ function friendlyError(raw: string): string {
     return 'Gemini está saturado en este momento. Ya intenté varias veces automáticamente y no respondió — intenta de nuevo en un rato.'
   }
   if (/"code":\s*429|RESOURCE_EXHAUSTED/.test(raw)) {
-    const match = raw.match(/retry in ([^"]+)"/i)
-    const when = match ? ` (dice que se resetea en ${match[1]})` : ''
-    return `Ya usaste tu cuota gratis de Gemini por hoy${when}. Espera a que se resetee o activa facturación en Google AI Studio.`
+    return 'Tu límite diario de Zelqoritha se acabó. Vuelve mañana para seguir diseñando.'
   }
   if (/Falta configurar tu API key/.test(raw)) {
     return 'Falta tu API key de Gemini — ponla en Ajustes.'

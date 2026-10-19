@@ -8,8 +8,6 @@ interface Props {
 
 export function Settings({ onChangePrinters, onSignedOut }: Props) {
   const [apiKey, setApiKey] = useState('')
-  const [openscadPath, setOpenscadPath] = useState('')
-  const [openscadOk, setOpenscadOk] = useState<boolean | null>(null)
   const [saved, setSaved] = useState(false)
 
   const [account, setAccount] = useState<LocalAccount | null>(null)
@@ -21,25 +19,22 @@ export function Settings({ onChangePrinters, onSignedOut }: Props) {
   useEffect(() => {
     window.api.getConfig().then((cfg) => {
       setApiKey(cfg.geminiApiKey)
-      setOpenscadPath(cfg.openscadPath)
       setAccount(cfg.account)
       setNameDraft(cfg.account?.name ?? '')
       setSelectedPrinterIds(cfg.selectedPrinterIds)
     })
-    window.api.checkOpenscad().then(setOpenscadOk)
     window.api.listPrinters().then(setPrinters)
   }, [])
 
   async function save() {
-    await window.api.setConfig({ geminiApiKey: apiKey, openscadPath })
-    setOpenscadOk(await window.api.checkOpenscad())
+    await window.api.setConfig({ geminiApiKey: apiKey })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  async function renameAccount() {
+  async function handleRenameAccount() {
     if (!nameDraft.trim()) return
-    const acc = await window.api.createAccount(nameDraft)
+    const acc = await window.api.renameAccount(nameDraft)
     setAccount(acc)
   }
 
@@ -59,10 +54,13 @@ export function Settings({ onChangePrinters, onSignedOut }: Props) {
         <label>Tu nombre</label>
         <div className="row">
           <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} style={{ flex: 1 }} />
-          <button className="btn secondary" onClick={renameAccount} disabled={nameDraft === account?.name}>
+          <button className="btn secondary" onClick={handleRenameAccount} disabled={nameDraft === account?.name}>
             Guardar nombre
           </button>
         </div>
+        {account?.email && (
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 8 }}>Correo: {account.email}</p>
+        )}
         <button className="btn secondary" onClick={handleSignOut} style={{ marginTop: 10 }}>
           Cerrar sesión
         </button>
@@ -86,17 +84,12 @@ export function Settings({ onChangePrinters, onSignedOut }: Props) {
 
       <h3>Generación de diseños</h3>
       <div className="field">
-        <label>API key de Gemini (se guarda solo en tu computadora)</label>
+        <label>API key de Gemini</label>
+        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -4, marginBottom: 8 }}>
+          Se te asignó automáticamente al crear tu cuenta. Solo cámbiala aquí si necesitas usar una
+          propia.
+        </p>
         <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIza..." />
-      </div>
-      <div className="field">
-        <label>Ruta del binario de OpenSCAD</label>
-        <input value={openscadPath} onChange={(e) => setOpenscadPath(e.target.value)} />
-        {openscadOk !== null && (
-          <span className={openscadOk ? 'loading' : 'error'} style={{ display: 'block', marginTop: 6 }}>
-            {openscadOk ? 'OpenSCAD detectado correctamente.' : 'No se pudo ejecutar OpenSCAD en esa ruta.'}
-          </span>
-        )}
       </div>
       <button className="btn" onClick={save}>
         Guardar

@@ -43,6 +43,12 @@
       "out/**/*"
     ],
     "icon": "build/icon.icns",
+    "extraResources": [
+      {
+        "from": "/Applications/OpenSCAD.app",
+        "to": "OpenSCAD.app"
+      }
+    ],
     "mac": {
       "target": "dmg",
       "category": "public.app-category.graphics-design"

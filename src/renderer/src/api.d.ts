@@ -24,6 +24,7 @@ export interface RenderedPart extends DesignPart {
 
 export interface LocalAccount {
   name: string
+  email: string
 }
 
 export interface AppConfig {
@@ -81,7 +82,8 @@ export interface Api {
   getDesign: (id: string) => Promise<SavedDesign | undefined>
   upsertDesign: (design: SavedDesign) => Promise<SavedDesign>
   deleteDesign: (id: string) => Promise<void>
-  createAccount: (name: string) => Promise<LocalAccount>
+  createAccount: (name: string, email: string) => Promise<LocalAccount>
+  renameAccount: (name: string) => Promise<LocalAccount>
   getAccount: () => Promise<LocalAccount | null>
   signOut: () => Promise<void>
   listWorkspaces: () => Promise<Workspace[]>

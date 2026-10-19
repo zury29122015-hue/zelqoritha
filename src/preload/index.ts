@@ -21,7 +21,8 @@ const api = {
     plateCount: number,
     copiesPerPlate: number
   ) => ipcRenderer.invoke('bambu:send', scadCode, parts, printerId, plateCount, copiesPerPlate),
-  createAccount: (name: string) => ipcRenderer.invoke('auth:create', name),
+  createAccount: (name: string, email: string) => ipcRenderer.invoke('auth:create', name, email),
+  renameAccount: (name: string) => ipcRenderer.invoke('auth:rename', name),
   getAccount: () => ipcRenderer.invoke('auth:getAccount'),
   signOut: () => ipcRenderer.invoke('auth:signOut'),
   listDesigns: () => ipcRenderer.invoke('library:list'),

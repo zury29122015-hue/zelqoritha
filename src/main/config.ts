@@ -2,6 +2,7 @@ import Store from 'electron-store'
 
 export interface LocalAccount {
   name: string
+  email: string
 }
 
 interface AppConfig {

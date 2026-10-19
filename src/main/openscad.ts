@@ -2,7 +2,20 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { app } from 'electron'
 import { store } from './config'
+
+/**
+ * OpenSCAD viene empacado dentro de la app (ver "extraResources" en package.json),
+ * asi que el usuario nunca necesita instalarlo aparte. En desarrollo (sin empacar)
+ * se usa el OpenSCAD instalado en la Mac, o la ruta guardada en config como fallback.
+ */
+function getOpenscadPath(): string {
+  if (app.isPackaged) {
+    return join(process.resourcesPath, 'OpenSCAD.app/Contents/MacOS/OpenSCAD')
+  }
+  return store.get('openscadPath') || '/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD'
+}
 
 function run(bin: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
@@ -35,7 +48,7 @@ export interface RenderedPart extends DesignPart {
  * que permite aislar cada pieza vía `-D render_part="<id>"`.
  */
 export async function renderParts(scadCode: string, parts: DesignPart[]): Promise<RenderedPart[]> {
-  const openscadPath = store.get('openscadPath')
+  const openscadPath = getOpenscadPath()
   const dir = await mkdtemp(join(tmpdir(), 'bambu-design-'))
   const scadFile = join(dir, 'model.scad')
   await writeFile(scadFile, scadCode, 'utf-8')
@@ -55,7 +68,7 @@ export async function renderParts(scadCode: string, parts: DesignPart[]): Promis
 }
 
 export async function renderCombinedStl(scadCode: string, outPath: string): Promise<void> {
-  const openscadPath = store.get('openscadPath')
+  const openscadPath = getOpenscadPath()
   const dir = await mkdtemp(join(tmpdir(), 'bambu-design-'))
   const scadFile = join(dir, 'model.scad')
   await writeFile(scadFile, scadCode, 'utf-8')
@@ -68,7 +81,7 @@ export async function renderCombinedStl(scadCode: string, outPath: string): Prom
 
 export async function checkOpenscadAvailable(): Promise<boolean> {
   try {
-    await run(store.get('openscadPath'), ['--version'])
+    await run(getOpenscadPath(), ['--version'])
     return true
   } catch {
     return false

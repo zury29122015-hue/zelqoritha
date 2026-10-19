@@ -16,7 +16,7 @@ import {
   deleteWorkspace,
   type SavedDesign
 } from './library'
-import { createAccount, getAccount, signOut } from './auth'
+import { createAccount, renameAccount, getAccount, signOut } from './auth'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -74,7 +74,8 @@ ipcMain.handle(
     sendToBambuStudio(scadCode, parts, printerId, plateCount, copiesPerPlate)
 )
 
-ipcMain.handle('auth:create', (_e, name: string) => createAccount(name))
+ipcMain.handle('auth:create', (_e, name: string, email: string) => createAccount(name, email))
+ipcMain.handle('auth:rename', (_e, name: string) => renameAccount(name))
 ipcMain.handle('auth:getAccount', () => getAccount())
 ipcMain.handle('auth:signOut', () => signOut())
 
