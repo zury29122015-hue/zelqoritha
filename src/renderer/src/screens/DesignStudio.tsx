@@ -8,14 +8,14 @@ interface ChatEntry {
 }
 
 function friendlyError(raw: string): string {
+  if (/ZELQORITHA_LIMIT_REACHED/.test(raw)) {
+    return 'Tu límite diario de Zelqoritha se acabó. Vuelve mañana para seguir diseñando.'
+  }
   if (/"code":\s*503|UNAVAILABLE/.test(raw)) {
     return 'Gemini está saturado en este momento. Ya intenté varias veces automáticamente y no respondió — intenta de nuevo en un rato.'
   }
-  if (/"code":\s*429|RESOURCE_EXHAUSTED/.test(raw)) {
-    return 'Tu límite diario de Zelqoritha se acabó. Vuelve mañana para seguir diseñando.'
-  }
-  if (/Falta configurar tu API key/.test(raw)) {
-    return 'Falta tu API key de Gemini — ponla en Ajustes.'
+  if (/Falta iniciar sesión/.test(raw)) {
+    return 'Falta iniciar sesión.'
   }
   return raw.length > 220 ? raw.slice(0, 220) + '…' : raw
 }

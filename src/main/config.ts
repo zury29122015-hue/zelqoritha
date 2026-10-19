@@ -6,14 +6,12 @@ export interface LocalAccount {
 }
 
 interface AppConfig {
-  geminiApiKey: string
   openscadPath: string
   selectedPrinterIds: string[]
   account: LocalAccount | null
 }
 
 const defaults: AppConfig = {
-  geminiApiKey: '',
   openscadPath: '/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD',
   selectedPrinterIds: [],
   account: null

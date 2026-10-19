@@ -7,9 +7,6 @@ interface Props {
 }
 
 export function Settings({ onChangePrinters, onSignedOut }: Props) {
-  const [apiKey, setApiKey] = useState('')
-  const [saved, setSaved] = useState(false)
-
   const [account, setAccount] = useState<LocalAccount | null>(null)
   const [nameDraft, setNameDraft] = useState('')
 
@@ -18,19 +15,12 @@ export function Settings({ onChangePrinters, onSignedOut }: Props) {
 
   useEffect(() => {
     window.api.getConfig().then((cfg) => {
-      setApiKey(cfg.geminiApiKey)
       setAccount(cfg.account)
       setNameDraft(cfg.account?.name ?? '')
       setSelectedPrinterIds(cfg.selectedPrinterIds)
     })
     window.api.listPrinters().then(setPrinters)
   }, [])
-
-  async function save() {
-    await window.api.setConfig({ geminiApiKey: apiKey })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
 
   async function handleRenameAccount() {
     if (!nameDraft.trim()) return
@@ -78,23 +68,9 @@ export function Settings({ onChangePrinters, onSignedOut }: Props) {
           ))}
         </ul>
       )}
-      <button className="btn secondary" onClick={onChangePrinters} style={{ marginBottom: 24 }}>
+      <button className="btn secondary" onClick={onChangePrinters}>
         Cambiar impresoras
       </button>
-
-      <h3>Generación de diseños</h3>
-      <div className="field">
-        <label>API key de Gemini</label>
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -4, marginBottom: 8 }}>
-          Se te asignó automáticamente al crear tu cuenta. Solo cámbiala aquí si necesitas usar una
-          propia.
-        </p>
-        <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIza..." />
-      </div>
-      <button className="btn" onClick={save}>
-        Guardar
-      </button>
-      {saved && <span style={{ marginLeft: 10, color: 'var(--accent-2)' }}>Guardado.</span>}
     </div>
   )
 }

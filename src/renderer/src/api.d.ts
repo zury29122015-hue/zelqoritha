@@ -28,7 +28,6 @@ export interface LocalAccount {
 }
 
 export interface AppConfig {
-  geminiApiKey: string
   openscadPath: string
   selectedPrinterIds: string[]
   account: LocalAccount | null
