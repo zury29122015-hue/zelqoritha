@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bajar Zelqoritha</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;600&display=swap">
+<style>
+/* Layout: one centered download card on a quiet page; the card flips into the punchline. */
+:root {
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --fg: #16201d;
+  --muted: #5b6a65;
+  --line: #d9e0dc;
+  --accent: #0f8f7a;
+  --accent-fg: #ffffff;
+  --joke: #e4572e;
+  --track: #e3e9e6;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1614; --surface: #17211e; --fg: #e8f0ed; --muted: #93a49e;
+    --line: #27352f; --accent: #2fc2a8; --accent-fg: #06201a; --joke: #ff7a52; --track: #243630;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1614; --surface: #17211e; --fg: #e8f0ed; --muted: #93a49e;
+  --line: #27352f; --accent: #2fc2a8; --accent-fg: #06201a; --joke: #ff7a52; --track: #243630;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; place-items: center;
+}
+.card {
+  width: 100%; max-width: 440px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+  padding: 32px 28px; display: grid; gap: 20px; text-align: left;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.mark {
+  width: 56px; height: 56px; border-radius: 14px; background: var(--accent); color: var(--accent-fg);
+  display: grid; place-items: center; font: 800 32px/1 var(--font-display);
+}
+h1 { font: 800 clamp(26px, 7vw, 32px)/1.1 var(--font-display); margin: 0; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+.lede { margin: 0; color: var(--muted); max-width: 52ch; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.specs b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+button {
+  font: 600 17px/1 var(--font-body); cursor: pointer; border: 0; border-radius: 12px;
+  padding: 16px 20px; width: 100%; background: var(--accent); color: var(--accent-fg);
+}
+button:hover { filter: brightness(1.06); }
+button:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+button.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.bar { height: 10px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
+.status { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.joke { display: grid; gap: 14px; }
+.joke h2 { font: 800 clamp(34px, 11vw, 48px)/1 var(--font-display); margin: 0; color: var(--joke); text-wrap: balance; }
+.joke p { margin: 0; color: var(--muted); }
+.joke .wiggle { display: inline-block; animation: wig .6s ease-in-out 2; transform-origin: 50% 80%; }
+@keyframes wig { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .joke .wiggle { animation: none; } .bar > i { transition: none; } }
+</style>
+
+</head>
+<body>
+<main class="card" id="card">
+  <section id="offer" style="display:grid;gap:20px">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">Z</div>
+      <div>
+        <h1>Zelqoritha</h1>
+        <p class="meta">Versión 1.0 · para Mac</p>
+      </div>
+    </div>
+    <p class="lede">La app que todos andan pidiendo. Un clic y la tienes en tu computadora.</p>
+    <ul class="specs">
+      <li>Tamaño <b>48,2 MB</b></li>
+      <li>Descargas <b>1</b></li>
+      <li>Precio <b>gratis</b></li>
+    </ul>
+    <div>
+      <button id="go" type="button">Bajar</button>
+      <div id="progress" hidden>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pb"><i id="fill"></i></div>
+        <p class="status" id="status">Preparando descarga…</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="joke" id="joke" hidden aria-live="polite">
+    <h2><span class="wiggle">¡Es una broma!</span></h2>
+    <p>No hay nada que bajar. Te dejé el 100 % de nada.</p>
+    <button class="ghost" id="again" type="button">Bajar otra vez</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  var go = document.getElementById('go'), progress = document.getElementById('progress'),
+      fill = document.getElementById('fill'), status = document.getElementById('status'),
+      pb = document.getElementById('pb'), offer = document.getElementById('offer'),
+      joke = document.getElementById('joke'), again = document.getElementById('again'),
+      timer = null;
+  var msgs = [[0, 'Preparando descarga…'], [30, 'Conectando con el servidor…'], [60, 'Descargando Zelqoritha…'], [90, 'Casi listo…']];
+
+  function setPct(p) {
+    fill.style.width = p + '%';
+    pb.setAttribute('aria-valuenow', Math.round(p));
+    var m = msgs[0][1];
+    for (var i = 0; i < msgs.length; i++) if (p >= msgs[i][0]) m = msgs[i][1];
+    status.textContent = Math.round(p) + ' % · ' + m;
+  }
+  function reset() {
+    clearInterval(timer);
+    go.hidden = false; progress.hidden = true; setPct(0);
+    joke.hidden = true; offer.hidden = false; go.focus();
+  }
+  go.addEventListener('click', function () {
+    go.hidden = true; progress.hidden = false;
+    var p = 0;
+    timer = setInterval(function () {
+      p += 4 + Math.random() * 7;
+      if (p >= 100) {
+        clearInterval(timer); setPct(100);
+        setTimeout(function () { offer.hidden = true; joke.hidden = false; again.focus(); }, 350);
+      } else setPct(p);
+    }, 160);
+  });
+  again.addEventListener('click', reset);
+})();
+</script>
+</body>
+</html>
