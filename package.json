@@ -43,6 +43,7 @@
       "out/**/*"
     ],
     "icon": "build/icon.icns",
+    "afterPack": "build/afterPack.cjs",
     "extraResources": [
       {
         "from": "/Applications/OpenSCAD.app",
