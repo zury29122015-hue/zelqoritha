@@ -325,11 +325,20 @@ export async function sendToBambuStudio(
   // Se intentó automatizar que cargara en la ventana ya abierta de Bambu Studio
   // (Archivo > Importar vía AppleScript/System Events), pero resultó frágil y
   // en un intento llegó a revolver los colores de un proyecto real del usuario.
-  // Mejor y más seguro: siempre abrir como archivo nuevo con "open -a".
-  await run('open', ['-a', 'BambuStudio', ...plateFiles], dir)
+  // Mejor y más seguro: siempre abrir como archivo nuevo.
+  //
+  // Si Bambu Studio ya tiene un proyecto abierto (de un envío anterior, o de otra
+  // placa de este mismo envío) y le mandamos otro archivo con "open -a", lo carga
+  // como "solo geometría": pierde su posición en la cama y su organización de
+  // piezas/colores, y por eso el diseño aparecía fuera de la placa habiendo que
+  // moverlo a mano. "open -n" fuerza una instancia nueva de la app por cada placa,
+  // así cada una siempre carga como proyecto completo, ya centrada en la cama.
+  for (const file of plateFiles) {
+    await run('open', ['-n', '-a', 'BambuStudio', file], dir)
+  }
 
   return {
     ok: true,
-    message: `Armé ${plateCount} placa(s) con ${fitted} copia(s) cada una y las abrí en Bambu Studio.${fitNote} Si no aparecen todas como placas del mismo proyecto, usa "Agregar placa" en Bambu Studio e impórtalas desde ${dir}.`
+    message: `Armé ${plateCount} placa(s) con ${fitted} copia(s) cada una y abrí cada una en su propia ventana de Bambu Studio, ya centradas en la cama.${fitNote}`
   }
 }
