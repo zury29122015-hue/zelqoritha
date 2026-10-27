@@ -24,11 +24,13 @@ interface Props {
   printer: PrinterModel
   initialDesign?: SavedDesign
   workspaceId?: string | null
-  onApproved: (scadCode: string, parts: DesignPart[]) => void
+  onApproved: (scadCode: string, parts: DesignPart[], plateCount: number, copiesPerPlate: number) => void
 }
 
 export function DesignStudio({ printer, initialDesign, workspaceId, onApproved }: Props) {
   const [prompt, setPrompt] = useState('')
+  const [plateCount, setPlateCount] = useState(1)
+  const [copiesPerPlate, setCopiesPerPlate] = useState(1)
   const [log, setLog] = useState<ChatEntry[]>(
     initialDesign
       ? [
@@ -153,6 +155,30 @@ export function DesignStudio({ printer, initialDesign, workspaceId, onApproved }
             </div>
           )}
           {error && <div className="error">{error}</div>}
+          <div className="row" style={{ gap: 12, marginBottom: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+              Placas
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={plateCount}
+                onChange={(e) => setPlateCount(Math.max(1, Number(e.target.value)))}
+                style={{ width: 60 }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+              Copias por placa
+              <input
+                type="number"
+                min={1}
+                max={200}
+                value={copiesPerPlate}
+                onChange={(e) => setCopiesPerPlate(Math.max(1, Number(e.target.value)))}
+                style={{ width: 60 }}
+              />
+            </label>
+          </div>
           <textarea
             rows={3}
             placeholder={design ? 'Pide un cambio, ej: haz las líneas más delgadas' : 'Ej: balón de básquet mini, naranja con líneas negras'}
@@ -170,7 +196,11 @@ export function DesignStudio({ printer, initialDesign, workspaceId, onApproved }
               {loading ? `Generando… (${elapsedSec}s)` : design ? 'Pedir cambio' : 'Generar diseño'}
             </button>
             {design && (
-              <button className="btn secondary" disabled={loading} onClick={() => onApproved(design.scadCode, design.parts)}>
+              <button
+                className="btn secondary"
+                disabled={loading}
+                onClick={() => onApproved(design.scadCode, design.parts, plateCount, copiesPerPlate)}
+              >
                 Aprobar diseño
               </button>
             )}

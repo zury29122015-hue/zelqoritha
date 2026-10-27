@@ -16,7 +16,12 @@ export function App() {
   const [lastNonSettingsStep, setLastNonSettingsStep] = useState<Step>('login')
   const [printers, setPrinters] = useState<PrinterModel[]>([])
   const [activePrinter, setActivePrinter] = useState<PrinterModel | null>(null)
-  const [approved, setApproved] = useState<{ scadCode: string; parts: DesignPart[] } | null>(null)
+  const [approved, setApproved] = useState<{
+    scadCode: string
+    parts: DesignPart[]
+    plateCount: number
+    copiesPerPlate: number
+  } | null>(null)
   const [openedDesign, setOpenedDesign] = useState<SavedDesign | undefined>(undefined)
   const [pendingWorkspaceId, setPendingWorkspaceId] = useState<string | null>(null)
   const [newDesignNonce, setNewDesignNonce] = useState(0)
@@ -92,8 +97,8 @@ export function App() {
           printer={activePrinter}
           initialDesign={openedDesign}
           workspaceId={pendingWorkspaceId}
-          onApproved={(scadCode, parts) => {
-            setApproved({ scadCode, parts })
+          onApproved={(scadCode, parts, plateCount, copiesPerPlate) => {
+            setApproved({ scadCode, parts, plateCount, copiesPerPlate })
             goTo('plates')
           }}
         />
@@ -104,6 +109,8 @@ export function App() {
           printer={activePrinter}
           scadCode={approved.scadCode}
           parts={approved.parts}
+          initialPlateCount={approved.plateCount}
+          initialCopiesPerPlate={approved.copiesPerPlate}
           onDone={() => goTo('design')}
         />
       )}
@@ -128,7 +135,7 @@ export function App() {
           }}
           onPrint={(design, printer) => {
             setActivePrinter(printer)
-            setApproved({ scadCode: design.scadCode, parts: design.parts })
+            setApproved({ scadCode: design.scadCode, parts: design.parts, plateCount: 1, copiesPerPlate: 1 })
             goTo('plates')
           }}
           onCreateInWorkspace={(workspaceId) => {

@@ -5,12 +5,21 @@ interface Props {
   printer: PrinterModel
   scadCode: string
   parts: DesignPart[]
+  initialPlateCount?: number
+  initialCopiesPerPlate?: number
   onDone: () => void
 }
 
-export function PlateSetup({ printer, scadCode, parts, onDone }: Props) {
-  const [plateCount, setPlateCount] = useState(1)
-  const [copiesPerPlate, setCopiesPerPlate] = useState(1)
+export function PlateSetup({
+  printer,
+  scadCode,
+  parts,
+  initialPlateCount = 1,
+  initialCopiesPerPlate = 1,
+  onDone
+}: Props) {
+  const [plateCount, setPlateCount] = useState(initialPlateCount)
+  const [copiesPerPlate, setCopiesPerPlate] = useState(initialCopiesPerPlate)
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
@@ -37,14 +46,14 @@ export function PlateSetup({ printer, scadCode, parts, onDone }: Props) {
       </p>
       <div className="field">
         <label>Número de placas</label>
-        <input type="number" min={1} max={10} value={plateCount} onChange={(e) => setPlateCount(Number(e.target.value))} />
+        <input type="number" min={1} max={50} value={plateCount} onChange={(e) => setPlateCount(Number(e.target.value))} />
       </div>
       <div className="field">
         <label>Copias por placa</label>
         <input
           type="number"
           min={1}
-          max={20}
+          max={200}
           value={copiesPerPlate}
           onChange={(e) => setCopiesPerPlate(Number(e.target.value))}
         />
